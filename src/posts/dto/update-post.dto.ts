@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -7,12 +8,12 @@ export class UpdatePostDto {
   content?: string;
 
   @IsOptional()
-  @IsUrl()
-  @MaxLength(1000)
-  imageUrl?: string;
+  @IsString()
+  @IsIn(['PUBLIC', 'PRIVATE'])
+  visibility?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  visibility?: string;
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  removeImage?: boolean;
 }

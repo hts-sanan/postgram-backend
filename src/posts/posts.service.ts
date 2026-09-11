@@ -8,12 +8,19 @@ import {
 import { PrismaService } from '../database/prisma.service.js';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
+import { ImageStorageService } from './image-storage.service.js';
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly imageStorage: ImageStorageService,
+  ) {}
 
-  private getPostType(content?: string | null, imageUrl?: string | null) {
+  private getPostType(
+    content?: string | null,
+    imageUrl?: string | null,
+  ) {
     const hasContent = !!content?.trim();
     const hasImage = !!imageUrl;
 
@@ -32,6 +39,24 @@ export class PostsService {
     throw new BadRequestException(
       'Post must contain content, an image, or both',
     );
+  }
+
+  private validateImage(file?: Express.Multer.File) {
+    if (!file) {
+      return;
+    }
+
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Only JPEG, PNG, and WebP images are allowed',
+      );
+    }
   }
 
   private async getPostResponse(postId: string, userId?: string) {
@@ -85,37 +110,55 @@ export class PostsService {
     };
   }
 
-  async create(userId: string, dto: CreatePostDto) {
+  async create(
+    userId: string,
+    dto: CreatePostDto,
+    file?: Express.Multer.File,
+  ) {
+    this.validateImage(file);
+
     const content = dto.content?.trim() || null;
-    const imageUrl = dto.imageUrl || null;
+    let imageUrl: string | null = null;
 
-    const postType = this.getPostType(content, imageUrl);
+    if (file) {
+      imageUrl = await this.imageStorage.save(file);
+    }
 
-    const post = await this.prisma.post.create({
-      data: {
-        userId,
-        postType,
-        content,
-        imageUrl,
-        visibility: dto.visibility || 'PUBLIC',
-        postStatus: 'POSTED',
-      },
-    });
+    try {
+      const postType = this.getPostType(content, imageUrl);
 
-    return {
-      id: post.id,
-      userId: post.userId,
-      postType: post.postType,
-      content: post.content,
-      imageUrl: post.imageUrl,
-      visibility: post.visibility,
-      postStatus: post.postStatus,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      likeCount: 0,
-      commentCount: 0,
-      hasLiked: false,
-    };
+      const post = await this.prisma.post.create({
+        data: {
+          userId,
+          postType,
+          content,
+          imageUrl,
+          visibility: dto.visibility || 'PUBLIC',
+          postStatus: 'POSTED',
+        },
+      });
+
+      return {
+        id: post.id,
+        userId: post.userId,
+        postType: post.postType,
+        content: post.content,
+        imageUrl: post.imageUrl,
+        visibility: post.visibility,
+        postStatus: post.postStatus,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        likeCount: 0,
+        commentCount: 0,
+        hasLiked: false,
+      };
+    } catch (error) {
+      if (imageUrl) {
+        await this.imageStorage.delete(imageUrl);
+      }
+
+      throw error;
+    }
   }
 
   async findAll(options: {
@@ -202,7 +245,14 @@ export class PostsService {
     return this.getPostResponse(postId, userId);
   }
 
-  async update(postId: string, userId: string, dto: UpdatePostDto) {
+  async update(
+    postId: string,
+    userId: string,
+    dto: UpdatePostDto,
+    file?: Express.Multer.File,
+  ) {
+    this.validateImage(file);
+
     const post = await this.prisma.post.findFirst({
       where: {
         id: postId,
@@ -220,33 +270,59 @@ export class PostsService {
       );
     }
 
+    if (dto.removeImage && file) {
+      throw new BadRequestException(
+        'Choose either a new image or removeImage',
+      );
+    }
+
     const content =
       dto.content !== undefined
         ? dto.content.trim() || null
         : post.content;
 
-    const imageUrl =
-      dto.imageUrl !== undefined
-        ? dto.imageUrl || null
-        : post.imageUrl;
+    let imageUrl = post.imageUrl;
+    let newImageUrl: string | null = null;
 
-    const postType = this.getPostType(content, imageUrl);
+    try {
+      if (file) {
+        newImageUrl = await this.imageStorage.save(file);
+        imageUrl = newImageUrl;
+      } else if (dto.removeImage) {
+        imageUrl = null;
+      }
 
-    await this.prisma.post.update({
-      where: {
-        id: postId,
-      },
-      data: {
-        content,
-        imageUrl,
-        postType,
-        ...(dto.visibility !== undefined
-          ? { visibility: dto.visibility }
-          : {}),
-      },
-    });
+      const postType = this.getPostType(content, imageUrl);
 
-    return this.getPostResponse(postId, userId);
+      await this.prisma.post.update({
+        where: {
+          id: postId,
+        },
+        data: {
+          content,
+          imageUrl,
+          postType,
+          ...(dto.visibility !== undefined
+            ? { visibility: dto.visibility }
+            : {}),
+        },
+      });
+
+      if (
+        post.imageUrl &&
+        post.imageUrl !== imageUrl
+      ) {
+        await this.imageStorage.delete(post.imageUrl);
+      }
+
+      return this.getPostResponse(postId, userId);
+    } catch (error) {
+      if (newImageUrl) {
+        await this.imageStorage.delete(newImageUrl);
+      }
+
+      throw error;
+    }
   }
 
   async remove(postId: string, userId: string) {
@@ -275,6 +351,10 @@ export class PostsService {
         deletedAt: new Date(),
       },
     });
+
+    if (post.imageUrl) {
+      await this.imageStorage.delete(post.imageUrl);
+    }
 
     return {
       message: 'Post deleted successfully',
