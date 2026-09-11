@@ -1,0 +1,27 @@
+import { Module } from "@nestjs/common";
+import { AppController } from "./app.controller.js";
+import { AppService } from "./app.service.js";
+import { DatabaseModule } from "./database/database.module.js";
+import { AuthModule } from "./auth/auth.module.js";
+import { UsersModule } from "./users/users.module.js";
+import { ProfilesModule } from "./profiles/profiles.module.js";
+import { PostsModule } from "./posts/posts.module.js";
+import { CommentsModule } from "./comments/comments.module.js";
+import { LikesModule } from "./likes/likes.module.js";
+import { MediaModule } from "./media/media.module.js";
+
+@Module({
+  imports: [
+    DatabaseModule,
+    AuthModule,
+    UsersModule,
+    ProfilesModule,
+    PostsModule,
+    CommentsModule,
+    LikesModule,
+    MediaModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
