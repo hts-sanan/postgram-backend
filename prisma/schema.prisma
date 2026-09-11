@@ -10,21 +10,20 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  username     String    @unique @db.VarChar(50)
-  passwordHash String    @map("password_hash") @db.VarChar(255)
-  role         String    @default("USER") @db.VarChar(20)
-  status       String    @default("ACTIVE") @db.VarChar(20)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
-
-  profile       Profile?
+  id            String         @id @default(uuid()) @db.Uuid
+  username      String         @unique @db.VarChar(50)
+  passwordHash  String         @map("password_hash") @db.VarChar(255)
+  role          String         @default("USER") @db.VarChar(20)
+  status        String         @default("ACTIVE") @db.VarChar(20)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime?      @map("deleted_at") @db.Timestamptz(6)
   authTokens    AuthToken[]
-  refreshTokens RefreshToken[]
-  posts         Post[]
-  likes         Like[]
   comments      Comment[]
+  likes         Like[]
+  posts         Post[]
+  profile       Profile?
+  refreshTokens RefreshToken[]
 
   @@index([status])
   @@map("users")
@@ -42,8 +41,7 @@ model Profile {
   visibility        String   @default("PUBLIC") @db.VarChar(20)
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  user User @relation(fields: [userId], references: [id])
+  user              User     @relation(fields: [userId], references: [id])
 
   @@index([visibility])
   @@map("profiles")
@@ -57,8 +55,7 @@ model AuthToken {
   expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
-
-  user User @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([expiresAt])
@@ -75,8 +72,7 @@ model RefreshToken {
   expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
-
-  user User @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([expiresAt])
@@ -97,10 +93,9 @@ model Post {
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
-
-  user     User      @relation(fields: [userId], references: [id])
-  likes    Like[]
-  comments Comment[]
+  comments   Comment[]
+  likes      Like[]
+  user       User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([postStatus])
@@ -118,13 +113,12 @@ model Like {
   postId    String   @map("post_id") @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
-  post Post @relation(fields: [postId], references: [id])
-  user User @relation(fields: [userId], references: [id])
-
+  @@unique([postId, userId])
   @@index([postId])
   @@index([userId])
-  @@unique([postId, userId])
   @@index([postId, createdAt])
   @@map("likes")
   @@schema("postgram")
@@ -139,12 +133,12 @@ model Comment {
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies         Comment[] @relation("CommentReplies")
+  post            Post      @relation(fields: [postId], references: [id])
+  user            User      @relation(fields: [userId], references: [id])
 
-  post          Post      @relation(fields: [postId], references: [id])
-  user          User      @relation(fields: [userId], references: [id])
-  parentComment Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
-  replies       Comment[] @relation("CommentReplies")
-
+  @@unique([id, postId])
   @@index([postId])
   @@index([userId])
   @@index([parentCommentId])
@@ -152,7 +146,6 @@ model Comment {
   @@index([deletedAt])
   @@index([postId, createdAt])
   @@index([postId, parentCommentId])
-  @@unique([id, postId])
   @@map("comments")
   @@schema("postgram")
 }

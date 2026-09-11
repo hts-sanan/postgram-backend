@@ -1,8 +1,18 @@
-import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class CreatePostDto {
   @IsOptional()
   @IsString()
   @MaxLength(5000)
   content?: string;
+
+  @IsOptional()
+  @IsUrl()
+  @MaxLength(1000)
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  visibility?: string;
 }
