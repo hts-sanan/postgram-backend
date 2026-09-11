@@ -5,7 +5,7 @@ import { PrismaClient } from "@prisma/client";
  * @file Prisma service.
  * @description Provides a shared Prisma Client instance for database access across all modules.
  *
- * @author HTS Development Team
+ * @author HTS beda gang
  * @created 2026-09-10
  * @updated 2026-09-10
  */
