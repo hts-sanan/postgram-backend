@@ -39,29 +39,7 @@ export class LikesService {
     };
   }
 
-  async unlikePost(postId: string, userId: string) {
-    const post = await this.prisma.post.findFirst({
-      where: {
-        id: postId,
-        deletedAt: null,
-      },
-    });
-
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
-
-    await this.prisma.like.deleteMany({
-      where: {
-        postId,
-        userId,
-      },
-    });
-
-    return {
-      message: 'Post unliked successfully',
-    };
-  }
+  
 
   async getLikes(postId: string) {
     const post = await this.prisma.post.findFirst({

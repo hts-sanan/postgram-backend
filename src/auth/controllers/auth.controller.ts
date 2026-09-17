@@ -22,7 +22,13 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Username already taken.' })
   @Post('signup')
   signup(@Body() dto: SignupDto) {
-    return this.authService.signup(dto.username, dto.password);
+    return this.authService.signup(
+      dto.username,
+      dto.password,
+      dto.firstName,
+      dto.lastName,
+      dto.dateOfBirth,
+    );
   }
 
   @ApiOperation({ summary: 'Log in with an existing username and password.' })

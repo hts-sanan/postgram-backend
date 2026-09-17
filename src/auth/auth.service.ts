@@ -17,7 +17,13 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(username: string, password: string) {
+    async signup(
+    username: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    dateOfBirth: string,
+  ) {
     const existingUser = await this.usersService.findByUsername(username);
 
     if (existingUser) {
@@ -25,7 +31,26 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await this.usersService.create(username, passwordHash);
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          username,
+          passwordHash,
+        },
+      });
+
+      await tx.profile.create({
+        data: {
+          userId: createdUser.id,
+          firstName,
+          lastName,
+          dateOfBirth: new Date(dateOfBirth),
+        },
+      });
+
+      return createdUser;
+    });
 
     return this.issueTokens(user.id, user.username);
   }

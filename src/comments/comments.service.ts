@@ -41,14 +41,33 @@ export class CommentsService {
       }
     }
 
-    return this.prisma.comment.create({
+    const comment = await this.prisma.comment.create({
       data: {
         postId,
         userId,
         content: dto.content,
         parentCommentId: dto.parentCommentId,
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
     });
+
+    return {
+      id: comment.id,
+      postId: comment.postId,
+      userId: comment.userId,
+      username: comment.user.username,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      deletedAt: comment.deletedAt,
+    };
   }
 
   async findAll(
@@ -74,6 +93,7 @@ export class CommentsService {
         where: {
           postId,
           parentCommentId: null,
+          deletedAt: null,
         },
         orderBy: {
           createdAt: 'asc',
@@ -109,6 +129,7 @@ export class CommentsService {
         where: {
           postId,
           parentCommentId: null,
+          deletedAt: null,
         },
       }),
     ]);
@@ -123,7 +144,7 @@ export class CommentsService {
         postId: comment.postId,
         userId: comment.userId,
         username: comment.user.username,
-        content: comment.deletedAt ? null : comment.content,
+        content: comment.content,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
         deletedAt: comment.deletedAt,
@@ -163,14 +184,33 @@ export class CommentsService {
       );
     }
 
-    return this.prisma.comment.update({
+    const updatedComment = await this.prisma.comment.update({
       where: {
         id: commentId,
       },
       data: {
         content: dto.content,
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
     });
+
+    return {
+      id: updatedComment.id,
+      postId: updatedComment.postId,
+      userId: updatedComment.userId,
+      username: updatedComment.user.username,
+      content: updatedComment.content,
+      createdAt: updatedComment.createdAt,
+      updatedAt: updatedComment.updatedAt,
+      deletedAt: updatedComment.deletedAt,
+    };
   }
 
   async remove(

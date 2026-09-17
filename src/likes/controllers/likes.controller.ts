@@ -1,6 +1,6 @@
 import {
   Controller,
-  Delete,
+  
   Get,
   Param,
   Post,
@@ -32,20 +32,7 @@ export class LikesController {
     );
   }
 
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Remove your like from a post.' })
-  @UseGuards(JwtAuthGuard)
-  @Delete()
-  unlike(
-    @Param('postId') postId: string,
-    @Req() req: any,
-  ) {
-    return this.likesService.unlikePost(
-      postId,
-      req.user.sub,
-    );
-  }
-
+  
   @ApiOperation({ summary: 'List everyone who liked this post.' })
   @Get()
   getLikes(@Param('postId') postId: string) {
