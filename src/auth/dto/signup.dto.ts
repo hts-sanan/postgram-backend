@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Length, Matches } from 'class-validator';
+import { IsDateString, IsString, Length, Matches } from 'class-validator';
 
 export class SignupDto {
   @ApiProperty({
@@ -22,4 +22,27 @@ export class SignupDto {
   @IsString()
   @Length(8, 128)
   password!: string;
+
+  @ApiProperty({
+    description: 'First name.',
+    example: 'Hanan',
+  })
+  @IsString()
+  @Length(1, 100)
+  firstName!: string;
+
+  @ApiProperty({
+    description: 'Last name.',
+    example: 'A',
+  })
+  @IsString()
+  @Length(1, 100)
+  lastName!: string;
+
+  @ApiProperty({
+    description: 'Date of birth in ISO date format.',
+    example: '2000-01-15',
+  })
+  @IsDateString()
+  dateOfBirth!: string;
 }
