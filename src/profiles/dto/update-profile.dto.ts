@@ -5,11 +5,11 @@ export class UpdateProfileDto {
   @ApiPropertyOptional({
     description: 'Short bio text.',
     example: 'Building Postgram 🚀',
-    maxLength: 2000,
+    maxLength: 100,
   })
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(100)
   bio?: string;
 
   @ApiPropertyOptional({
