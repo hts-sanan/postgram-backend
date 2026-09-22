@@ -1,5 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsString, Length, Matches } from 'class-validator';
+import { IsDateString, IsString, Length, Matches, Validate } from 'class-validator';
+import {
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+} from 'class-validator';
+
+@ValidatorConstraint({ name: 'isNotFutureDate', async: false })
+class IsNotFutureDateConstraint implements ValidatorConstraintInterface {
+  validate(value: string) {
+    if (!value) return false;
+
+    const inputDate = new Date(`${value}T00:00:00`);
+    const today = new Date();
+
+    today.setHours(23, 59, 59, 999);
+
+    return inputDate <= today;
+  }
+
+  defaultMessage() {
+    return 'dateOfBirth cannot be in the future.';
+  }
+}
 
 export class SignupDto {
   @ApiProperty({
@@ -44,5 +66,6 @@ export class SignupDto {
     example: '2000-01-15',
   })
   @IsDateString()
+  @Validate(IsNotFutureDateConstraint)
   dateOfBirth!: string;
 }
